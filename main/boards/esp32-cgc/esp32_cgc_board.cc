@@ -46,30 +46,32 @@ static const gc9a01_lcd_init_cmd_t gc9107_lcd_init_cmds[] = {
     {0xc6, (uint8_t[]){0x21}, 1, 0},
     {0xc7, (uint8_t[]){0x15}, 1, 0},
     {0xf0,
-    (uint8_t[]){0x1D, 0x38, 0x09, 0x4D, 0x92, 0x2F, 0x35, 0x52, 0x1E, 0x0C,
-                0x04, 0x12, 0x14, 0x1f},
-    14, 0},
+     (uint8_t[]){0x1D, 0x38, 0x09, 0x4D, 0x92, 0x2F, 0x35, 0x52, 0x1E, 0x0C,
+                 0x04, 0x12, 0x14, 0x1f},
+     14, 0},
     {0xf1,
-    (uint8_t[]){0x16, 0x40, 0x1C, 0x54, 0xA9, 0x2D, 0x2E, 0x56, 0x10, 0x0D,
-                0x0C, 0x1A, 0x14, 0x1E},
-    14, 0},
+     (uint8_t[]){0x16, 0x40, 0x1C, 0x54, 0xA9, 0x2D, 0x2E, 0x56, 0x10, 0x0D,
+                 0x0C, 0x1A, 0x14, 0x1E},
+     14, 0},
     {0xf4, (uint8_t[]){0x00, 0x00, 0xFF}, 3, 0},
     {0xba, (uint8_t[]){0xFF, 0xFF}, 2, 0},
 };
 #endif
- 
+
 #define TAG "ESP32_CGC"
 
 LV_FONT_DECLARE(font_puhui_14_1);
 LV_FONT_DECLARE(font_awesome_14_1);
 
-class ESP32_CGC : public WifiBoard {
+class ESP32_CGC : public WifiBoard
+{
 private:
     Button boot_button_;
-    LcdDisplay* display_;
+    LcdDisplay *display_;
     Button asr_button_;
 
-    void InitializeSpi() {
+    void InitializeSpi()
+    {
         spi_bus_config_t buscfg = {};
         buscfg.mosi_io_num = DISPLAY_MOSI_PIN;
         buscfg.miso_io_num = GPIO_NUM_NC;
@@ -80,7 +82,8 @@ private:
         ESP_ERROR_CHECK(spi_bus_initialize(SPI3_HOST, &buscfg, SPI_DMA_CH_AUTO));
     }
 
-    void InitializeLcdDisplay() {
+    void InitializeLcdDisplay()
+    {
         esp_lcd_panel_io_handle_t panel_io = nullptr;
         esp_lcd_panel_handle_t panel = nullptr;
         // 液晶屏控制IO初始化
@@ -108,57 +111,55 @@ private:
         gc9a01_vendor_config_t gc9107_vendor_config = {
             .init_cmds = gc9107_lcd_init_cmds,
             .init_cmds_size = sizeof(gc9107_lcd_init_cmds) / sizeof(gc9a01_lcd_init_cmd_t),
-        };        
+        };
 #else
         ESP_ERROR_CHECK(esp_lcd_new_panel_st7789(panel_io, &panel_config, &panel));
 #endif
-        
+
         esp_lcd_panel_reset(panel);
- 
 
         esp_lcd_panel_init(panel);
         esp_lcd_panel_invert_color(panel, DISPLAY_INVERT_COLOR);
         esp_lcd_panel_swap_xy(panel, DISPLAY_SWAP_XY);
         esp_lcd_panel_mirror(panel, DISPLAY_MIRROR_X, DISPLAY_MIRROR_Y);
-#ifdef  LCD_TYPE_GC9A01_SERIAL
+#ifdef LCD_TYPE_GC9A01_SERIAL
         panel_config.vendor_config = &gc9107_vendor_config;
 #endif
         display_ = new SpiLcdDisplay(panel_io, panel,
-                                    DISPLAY_WIDTH, DISPLAY_HEIGHT, DISPLAY_OFFSET_X, DISPLAY_OFFSET_Y, DISPLAY_MIRROR_X, DISPLAY_MIRROR_Y, DISPLAY_SWAP_XY,
-                                    {
-                                        .text_font = &font_puhui_14_1,
-                                        .icon_font = &font_awesome_14_1,
-                                        .emoji_font = font_emoji_32_init(),
-                                    });
+                                     DISPLAY_WIDTH, DISPLAY_HEIGHT, DISPLAY_OFFSET_X, DISPLAY_OFFSET_Y, DISPLAY_MIRROR_X, DISPLAY_MIRROR_Y, DISPLAY_SWAP_XY,
+                                     {
+                                         .text_font = &font_puhui_14_1,
+                                         .icon_font = &font_awesome_14_1,
+                                         .emoji_font = font_emoji_32_init(),
+                                     });
     }
 
+    void InitializeButtons()
+    {
 
- 
-    void InitializeButtons() {
-        
-        boot_button_.OnClick([this]() {
+        boot_button_.OnClick([this]()
+                             {
             auto& app = Application::GetInstance();
             if (app.GetDeviceState() == kDeviceStateStarting && !WifiStation::GetInstance().IsConnected()) {
                 ResetWifiConfiguration();
             }
-            app.ToggleChatState();
-        });
+            app.ToggleChatState(); });
 
-        asr_button_.OnClick([this]() {
-            std::string wake_word="你好小智";
-            Application::GetInstance().WakeWordInvoke(wake_word);
-        });
-
+        asr_button_.OnClick([this]()
+                            {
+            std::string wake_word="BOB";
+            Application::GetInstance().WakeWordInvoke(wake_word); });
     }
 
     // 物联网初始化，添加对 AI 可见设备
-    void InitializeTools() {
+    void InitializeTools()
+    {
         static LampController lamp(LAMP_GPIO);
     }
 
 public:
-    ESP32_CGC() :
-	boot_button_(BOOT_BUTTON_GPIO), asr_button_(ASR_BUTTON_GPIO) {
+    ESP32_CGC() : boot_button_(BOOT_BUTTON_GPIO), asr_button_(ASR_BUTTON_GPIO)
+    {
         InitializeSpi();
         InitializeLcdDisplay();
         InitializeButtons();
@@ -166,23 +167,25 @@ public:
         GetBacklight()->RestoreBrightness();
     }
 
-    virtual AudioCodec* GetAudioCodec() override 
+    virtual AudioCodec *GetAudioCodec() override
     {
 #ifdef AUDIO_I2S_METHOD_SIMPLEX
         static NoAudioCodecSimplex audio_codec(AUDIO_INPUT_SAMPLE_RATE, AUDIO_OUTPUT_SAMPLE_RATE,
-            AUDIO_I2S_SPK_GPIO_BCLK, AUDIO_I2S_SPK_GPIO_LRCK, AUDIO_I2S_SPK_GPIO_DOUT, AUDIO_I2S_MIC_GPIO_SCK, AUDIO_I2S_MIC_GPIO_WS, AUDIO_I2S_MIC_GPIO_DIN);
+                                               AUDIO_I2S_SPK_GPIO_BCLK, AUDIO_I2S_SPK_GPIO_LRCK, AUDIO_I2S_SPK_GPIO_DOUT, AUDIO_I2S_MIC_GPIO_SCK, AUDIO_I2S_MIC_GPIO_WS, AUDIO_I2S_MIC_GPIO_DIN);
 #else
         static NoAudioCodecDuplex audio_codec(AUDIO_INPUT_SAMPLE_RATE, AUDIO_OUTPUT_SAMPLE_RATE,
-            AUDIO_I2S_GPIO_BCLK, AUDIO_I2S_GPIO_WS, AUDIO_I2S_GPIO_DOUT, AUDIO_I2S_GPIO_DIN);
+                                              AUDIO_I2S_GPIO_BCLK, AUDIO_I2S_GPIO_WS, AUDIO_I2S_GPIO_DOUT, AUDIO_I2S_GPIO_DIN);
 #endif
         return &audio_codec;
     }
 
-    virtual Display* GetDisplay() override {
+    virtual Display *GetDisplay() override
+    {
         return display_;
     }
 
-    virtual Backlight* GetBacklight() override {
+    virtual Backlight *GetBacklight() override
+    {
         static PwmBacklight backlight(DISPLAY_BACKLIGHT_PIN, DISPLAY_BACKLIGHT_OUTPUT_INVERT);
         return &backlight;
     }

@@ -15,17 +15,18 @@
 #define AUDIO_CODEC_DMA_FRAME_NUM 240
 #define AUDIO_CODEC_DEFAULT_MIC_GAIN 30.0
 
-class AudioCodec {
+class AudioCodec
+{
 public:
     AudioCodec();
     virtual ~AudioCodec();
-    
+
     virtual void SetOutputVolume(int volume);
     virtual void EnableInput(bool enable);
     virtual void EnableOutput(bool enable);
 
-    virtual void OutputData(std::vector<int16_t>& data);
-    virtual bool InputData(std::vector<int16_t>& data);
+    virtual void OutputData(std::vector<int16_t> &data);
+    virtual bool InputData(std::vector<int16_t> &data);
     virtual void Start();
 
     inline bool duplex() const { return duplex_; }
@@ -50,10 +51,10 @@ protected:
     int output_sample_rate_ = 0;
     int input_channels_ = 1;
     int output_channels_ = 1;
-    int output_volume_ = 70;
+    int output_volume_ = 30;
 
-    virtual int Read(int16_t* dest, int samples) = 0;
-    virtual int Write(const int16_t* data, int samples) = 0;
+    virtual int Read(int16_t *dest, int samples) = 0;
+    virtual int Write(const int16_t *data, int samples) = 0;
 };
 
 #endif // _AUDIO_CODEC_H
